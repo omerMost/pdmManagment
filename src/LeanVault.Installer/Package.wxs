@@ -1,0 +1,41 @@
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Package Name="LeanVault SolidWorks Add-in" Manufacturer="LeanVault" Version="1.0.0.0" UpgradeCode="d1e2f3a4-b5c6-7d8e-9f0a-1b2c3d4e5f6a">
+    <MajorUpgrade DowngradeErrorMessage="A newer version of LeanVault is already installed." />
+
+    <!-- Feature containing the Add-in and CLI -->
+    <Feature Id="MainFeature" Title="LeanVault Core" Level="1">
+      <ComponentGroupRef Id="AddInComponents" />
+      <ComponentGroupRef Id="CliComponents" />
+    </Feature>
+
+    <StandardDirectory Id="ProgramFiles64Folder">
+      <Directory Id="INSTALLFOLDER" Name="LeanVault">
+        <Directory Id="AddInFolder" Name="AddIn" />
+        <Directory Id="CliFolder" Name="CLI" />
+      </Directory>
+    </StandardDirectory>
+
+    <ComponentGroup Id="AddInComponents" Directory="AddInFolder">
+      <Component Id="AddInDll" Guid="*">
+        <!-- The actual source path would point to the built AddIn DLL -->
+        <File Id="LeanVaultAddInDll" Source="..\LeanVault.AddIn\bin\x64\Release\LeanVault.AddIn.dll" KeyPath="yes" />
+        
+        <!-- COM Registration for SolidWorks Add-in -->
+        <RegistryKey Root="HKLM" Key="SOFTWARE\SolidWorks\Addins\{C1D2E3F4-A5B6-7890-CDEF-123456789ABC}">
+          <RegistryValue Type="integer" Value="0" />
+          <RegistryValue Type="string" Name="Description" Value="LeanVault — Plastic SCM PDM integration for SolidWorks" />
+          <RegistryValue Type="string" Name="Title" Value="LeanVault" />
+        </RegistryKey>
+      </Component>
+    </ComponentGroup>
+
+    <ComponentGroup Id="CliComponents" Directory="CliFolder">
+      <Component Id="CliExe" Guid="*">
+        <File Id="LvExe" Source="..\LeanVault.Cli\bin\Release\net8.0-windows\lv.exe" KeyPath="yes" />
+        <!-- Add lv.exe to system PATH -->
+        <Environment Id="UpdatePath" Name="PATH" Action="set" System="yes" Part="last" Value="[CliFolder]" />
+      </Component>
+    </ComponentGroup>
+
+  </Package>
+</Wix>

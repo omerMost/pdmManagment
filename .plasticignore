@@ -1,0 +1,31 @@
+# SolidWorks backup and temp files
+*~.SLDPRT
+*~.SLDASM
+*~.SLDDRW
+*.swpub
+*.sldrec
+*.sldtmp
+~*.sld*
+
+# SolidWorks auto-recover
+__SWbak/
+
+# Windows thumbnails
+Thumbs.db
+desktop.ini
+
+# Production exports — generated on demand, not version controlled
+03_Production/
+*.step
+*.STEP
+*.stp
+*.STP
+*.pdf
+*.PDF
+
+# Visual Studio build artifacts
+bin/
+obj/
+*.user
+*.suo
+.vs/

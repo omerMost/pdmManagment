@@ -1,0 +1,20 @@
+<UserControl x:Class="LeanVault.AddIn.UI.CheckInDialog"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Width="380" FontFamily="Segoe UI" FontSize="12">
+    <StackPanel Margin="16">
+        <TextBlock Text="Commit message (required):" FontWeight="SemiBold" Margin="0,0,0,6"/>
+        <TextBox x:Name="CommentBox" Height="80" TextWrapping="Wrap" AcceptsReturn="True"
+                 VerticalScrollBarVisibility="Auto" Padding="4"
+                 BorderBrush="#AAA" BorderThickness="1"/>
+        <TextBlock x:Name="ValidationMsg" Foreground="Red" FontSize="11"
+                   Margin="0,4,0,0" Visibility="Collapsed"
+                   Text="A commit message is required."/>
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
+            <Button Content="Cancel" Width="70" Margin="0,0,8,0"
+                    Click="OnCancel"/>
+            <Button Content="Check In" Width="80" IsDefault="True"
+                    Click="OnCheckIn"/>
+        </StackPanel>
+    </StackPanel>
+</UserControl>

@@ -1,0 +1,16 @@
+# CAD test data (large binary files, not for git)
+/System_30cm/
+/System_40cm/
+
+# .NET build artifacts
+bin/
+obj/
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+
+# WiX build output
+*.wixpdb
+*.msi
