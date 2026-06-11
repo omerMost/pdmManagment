@@ -758,8 +758,8 @@ namespace LeanVault.AddIn.UI
         public void Execute(object p) => _execute(p);
         public event EventHandler CanExecuteChanged
         {
-            add => CommandManager.RequerySuggested += value;
-            remove => CommandManager.RequerySuggested -= value;
+            add => System.Windows.Input.CommandManager.RequerySuggested += value;
+            remove => System.Windows.Input.CommandManager.RequerySuggested -= value;
         }
     }
 }

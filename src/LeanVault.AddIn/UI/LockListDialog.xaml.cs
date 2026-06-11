@@ -10,6 +10,7 @@ namespace LeanVault.AddIn.UI
     {
         public class LockEntry
         {
+            public string Guid { get; set; }
             public string FilePath { get; set; }
             public string Owner { get; set; }
         }
@@ -34,26 +35,29 @@ namespace LeanVault.AddIn.UI
                 var trimmed = line.Trim();
                 if (string.IsNullOrEmpty(trimmed)) continue;
 
-                var parts = trimmed.Split(new[] { ' ', '\t' }, System.StringSplitOptions.RemoveEmptyEntries);
-                if (parts.Length > 0)
+                // cm listlocks columns: GUID, user, workspace name, server path.
+                // A workspace name containing spaces would shift the path column;
+                // the GUID and owner (used for Force Release) are unaffected.
+                var parts = trimmed.Split(new[] { ' ', '\t' }, 4, System.StringSplitOptions.RemoveEmptyEntries);
+                if (parts.Length < 2) continue;
+
+                _locks.Add(new LockEntry
                 {
-                    _locks.Add(new LockEntry
-                    {
-                        FilePath = parts[0],
-                        Owner = parts.Length > 1 ? parts[1] : "Unknown"
-                    });
-                }
+                    Guid = parts[0],
+                    Owner = parts[1],
+                    FilePath = parts.Length > 3 ? parts[3] : (parts.Length > 2 ? parts[2] : ""),
+                });
             }
         }
 
         private async void ForceRelease_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is Button btn && btn.Tag is string path)
+            if (sender is Button btn && btn.Tag is LockEntry entry)
             {
-                var res = MessageBox.Show($"Force unlock\n{path}?", "Confirm Unlock", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+                var res = MessageBox.Show($"Force unlock\n{entry.FilePath}?", "Confirm Unlock", MessageBoxButton.YesNo, MessageBoxImage.Warning);
                 if (res == MessageBoxResult.Yes)
                 {
-                    await _cm.ForceUnlockAsync(path);
+                    await _cm.ForceUnlockAsync(entry.Guid);
                     await RefreshLocksAsync();
                 }
             }

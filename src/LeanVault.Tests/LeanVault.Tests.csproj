@@ -15,7 +15,4 @@
   <ItemGroup>
     <ProjectReference Include="..\LeanVault.AddIn\LeanVault.AddIn.csproj" />
   </ItemGroup>
-  <ItemGroup>
-    <Compile Include="CmStatusParserTests.cs" />
-  </ItemGroup>
 </Project>

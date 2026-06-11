@@ -1,5 +1,7 @@
 using System;
+using System.IO;
 using System.Runtime.InteropServices;
+using System.Windows.Forms;
 using Microsoft.Win32;
 using SolidWorks.Interop.sldworks;
 using SolidWorks.Interop.swpublished;
@@ -9,7 +11,7 @@ namespace LeanVault.AddIn
 {
     [ComVisible(true)]
     [Guid("C1D2E3F4-A5B6-7890-CDEF-123456789ABC")]
-    [ClassInterface(ClassInterfaceType.None)]
+    [ClassInterface(ClassInterfaceType.AutoDual)]
     public class SwAddin : ISwAddin
     {
         private ISldWorks _sw;
@@ -23,24 +25,43 @@ namespace LeanVault.AddIn
 
         public bool ConnectToSW(object thisSW, int cookie)
         {
-            _sw = (ISldWorks)thisSW;
-            _addinCookie = cookie;
-            _sw.SetAddinCallbackInfo2(0, this, cookie);
+            try
+            {
+                Log("ConnectToSW start");
+                _sw = (ISldWorks)thisSW;
+                _addinCookie = cookie;
+                _sw.SetAddinCallbackInfo2(0, this, cookie);
 
-            CreateTaskPane();
-            AttachSwEvents();
-            return true;
+                CreateTaskPane();
+                AttachSwEvents();
+                Log("ConnectToSW complete");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Log("ConnectToSW failed: " + ex);
+                MessageBox.Show(
+                    "LeanVault failed to load:\n\n" + ex.Message,
+                    "LeanVault Add-in",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+                return false;
+            }
         }
 
         public bool DisconnectFromSW()
         {
-            DetachSwEvents();
+            Log("DisconnectFromSW start");
+            if (_sw != null)
+                DetachSwEvents();
             _taskpane?.DeleteView();
             _taskpane = null;
             _taskpaneHost?.Dispose();
             _taskpaneHost = null;
-            Marshal.ReleaseComObject(_sw);
+            if (_sw != null)
+                Marshal.ReleaseComObject(_sw);
             _sw = null;
+            Log("DisconnectFromSW complete");
             return true;
         }
 
@@ -49,7 +70,8 @@ namespace LeanVault.AddIn
             _taskpaneHost = new TaskPaneHost(_sw);
             // CreateTaskpaneView2(iconPath, title) — empty string uses default icon
             _taskpane = _sw.CreateTaskpaneView2("", "LeanVault");
-            _taskpane.DisplayWindowFromHandle(_taskpaneHost.Handle.ToInt32());
+            _taskpane.DisplayWindowFromHandlex64(_taskpaneHost.Handle.ToInt64());
+            Log("Task pane created. Handle=" + _taskpaneHost.Handle);
         }
 
         private void AttachSwEvents()
@@ -57,7 +79,6 @@ namespace LeanVault.AddIn
             var swEvents = (SldWorks)_sw;
             swEvents.FileOpenNotify2 += OnFileOpen;
             swEvents.ActiveDocChangeNotify += OnActiveDocChange;
-            swEvents.FileSaveNotify += OnFileSave;
             swEvents.FileCloseNotify += OnFileClose;
         }
 
@@ -66,7 +87,6 @@ namespace LeanVault.AddIn
             var swEvents = (SldWorks)_sw;
             swEvents.FileOpenNotify2 -= OnFileOpen;
             swEvents.ActiveDocChangeNotify -= OnActiveDocChange;
-            swEvents.FileSaveNotify -= OnFileSave;
             swEvents.FileCloseNotify -= OnFileClose;
         }
 
@@ -101,9 +121,20 @@ namespace LeanVault.AddIn
         {
             var key = Registry.LocalMachine.CreateSubKey(
                 $@"SOFTWARE\SolidWorks\Addins\{{{t.GUID}}}");
-            key.SetValue(null, 0);
+            key.SetValue(null, 1, RegistryValueKind.DWord);
             key.SetValue("Description", "LeanVault — Plastic SCM PDM integration for SolidWorks");
             key.SetValue("Title", "LeanVault");
+
+            var versionKey = Registry.LocalMachine.CreateSubKey(
+                $@"SOFTWARE\SolidWorks\SOLIDWORKS 2021\Addins\{{{t.GUID}}}");
+            versionKey.SetValue(null, 1, RegistryValueKind.DWord);
+            versionKey.SetValue("Description", "LeanVault - Plastic SCM PDM integration for SolidWorks");
+            versionKey.SetValue("Title", "LeanVault");
+
+            var startup = Registry.CurrentUser.CreateSubKey($@"SOFTWARE\SolidWorks\AddInsStartup\{{{t.GUID}}}");
+            startup.SetValue(null, 1, RegistryValueKind.DWord);
+            var startupValues = Registry.CurrentUser.CreateSubKey(@"SOFTWARE\SolidWorks\AddInsStartup");
+            startupValues.SetValue("{" + t.GUID + "}", 1, RegistryValueKind.DWord);
         }
 
         [ComUnregisterFunction]
@@ -111,6 +142,24 @@ namespace LeanVault.AddIn
         {
             Registry.LocalMachine.DeleteSubKey(
                 $@"SOFTWARE\SolidWorks\Addins\{{{t.GUID}}}", throwOnMissingSubKey: false);
+            Registry.LocalMachine.DeleteSubKey(
+                $@"SOFTWARE\SolidWorks\SOLIDWORKS 2021\Addins\{{{t.GUID}}}", throwOnMissingSubKey: false);
+            Registry.CurrentUser.DeleteSubKey(
+                $@"SOFTWARE\SolidWorks\AddInsStartup\{{{t.GUID}}}", throwOnMissingSubKey: false);
+        }
+
+        private static void Log(string message)
+        {
+            try
+            {
+                File.AppendAllText(
+                    Path.Combine(Path.GetTempPath(), "LeanVault.addin.log"),
+                    DateTime.Now.ToString("s") + " " + message + System.Environment.NewLine);
+            }
+            catch
+            {
+                // Logging must never block SolidWorks add-in loading.
+            }
         }
 
         #endregion
